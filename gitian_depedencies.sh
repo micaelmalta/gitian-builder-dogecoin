@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) 2021 The Dogecoin Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 oss_patch_url="https://bitcoincore.org/cfields/osslsigncode-Backports-to-1.7.1.patch"
 oss_patch_hash="a8c4e9cafba922f89de0df1f2152e7be286aba73f78505169bc351a7938dd911"
