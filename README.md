@@ -19,12 +19,6 @@
 ## BUILD
     ./gitian-build.sh -j <jobs> -m <mem> --build <signer_name> <version>
 
-## SIGN
-    ./gitian-build.sh --sign <signer_name> <version>
-
-## BUILD AND SIGN
-    ./gitian-build.sh -j <jobs> -m <mem> -B <signer_name> <version>
-
 ## VERIFY
     ./gitian-build.sh --verify <signer_name> <version>
 

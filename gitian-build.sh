@@ -326,60 +326,60 @@ then
 	echo "Verifying v${VERSION} Mac OSX"
 	echo ""
 	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-unsigned ../dogecoin/contrib/gitian-descriptors/gitian-osx.yml
-	# Signed Windows
-	echo ""
-	echo "Verifying v${VERSION} Signed Windows"
-	echo ""
-	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-	# Signed Mac OSX
-	echo ""
-	echo "Verifying v${VERSION} Signed Mac OSX"
-	echo ""
-	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+#	# Signed Windows
+#	echo ""
+#	echo "Verifying v${VERSION} Signed Windows"
+#	echo ""
+#	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+#	# Signed Mac OSX
+#	echo ""
+#	echo "Verifying v${VERSION} Signed Mac OSX"
+#	echo ""
+#	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
 	popd
 fi
 
 # Sign binaries
-if [[ $sign = true ]]
-then
-
-  pushd ./gitian-builder
-	# Sign Windows
-	if [[ $windows = true ]]
-	then
-	    echo ""
-	    echo "Signing ${VERSION} Windows"
-	    echo ""
-	    ./bin/gbuild -i --commit signature=${COMMIT} ../dogecoin/contrib/gitian-descriptors/gitian-win-signer.yml
-	    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-win-signer.yml
-	    mv build/out/dogecoin-*win64-setup.exe ../dogecoin-binaries/${VERSION}
-	    mv build/out/dogecoin-*win32-setup.exe ../dogecoin-binaries/${VERSION}
-	fi
-	# Sign Mac OSX
-	if [[ $osx = true ]]
-	then
-	    echo ""
-	    echo "Signing ${VERSION} Mac OSX"
-	    echo ""
-	    ./bin/gbuild -i --commit signature=${COMMIT} ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-	    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-	    mv build/out/dogecoin-osx-signed.dmg ../dogecoin-binaries/${VERSION}/dogecoin-${VERSION}-osx.dmg
-	fi
-	popd
-
-        if [[ $commitFiles = true ]]
-        then
-            # Commit Sigs
-            pushd gitian.sigs
-            echo ""
-            echo "Committing ${VERSION} Signed Sigs"
-            echo ""
-            git add ${VERSION}-win-signed/${SIGNER}
-            git add ${VERSION}-osx-signed/${SIGNER}
-            git commit -a -m "Add ${VERSION} signed binary sigs for ${SIGNER}"
-            popd
-        fi
-fi
+#if [[ $sign = true ]]
+#then
+#
+#  pushd ./gitian-builder
+#	# Sign Windows
+#	if [[ $windows = true ]]
+#	then
+#	    echo ""
+#	    echo "Signing ${VERSION} Windows"
+#	    echo ""
+#	    ./bin/gbuild -i --commit signature=${COMMIT} ../dogecoin/contrib/gitian-descriptors/gitian-win-signer.yml
+#	    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-win-signer.yml
+#	    mv build/out/dogecoin-*win64-setup.exe ../dogecoin-binaries/${VERSION}
+#	    mv build/out/dogecoin-*win32-setup.exe ../dogecoin-binaries/${VERSION}
+#	fi
+#	# Sign Mac OSX
+#	if [[ $osx = true ]]
+#	then
+#	    echo ""
+#	    echo "Signing ${VERSION} Mac OSX"
+#	    echo ""
+#	    ./bin/gbuild -i --commit signature=${COMMIT} ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+#	    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+#	    mv build/out/dogecoin-osx-signed.dmg ../dogecoin-binaries/${VERSION}/dogecoin-${VERSION}-osx.dmg
+#	fi
+#	popd
+#
+#        if [[ $commitFiles = true ]]
+#        then
+#            # Commit Sigs
+#            pushd gitian.sigs
+#            echo ""
+#            echo "Committing ${VERSION} Signed Sigs"
+#            echo ""
+#            git add ${VERSION}-win-signed/${SIGNER}
+#            git add ${VERSION}-osx-signed/${SIGNER}
+#            git commit -a -m "Add ${VERSION} signed binary sigs for ${SIGNER}"
+#            popd
+#        fi
+#fi
 
 # Sign binaries
 if [[ $push = true ]]
