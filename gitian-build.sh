@@ -221,6 +221,9 @@ then
   ./gitian_setup_docker.sh
 
   git clone https://github.com/micaelmalta/gitian-builder
+  pushd gitian-builder
+  git checkout docker
+  popd
   git clone https://github.com/dogecoin/gitian.sigs.git
   git clone https://github.com/dogecoin/dogecoin-detached-sigs.git
   git clone $url
