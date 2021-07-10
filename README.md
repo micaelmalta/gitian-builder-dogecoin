@@ -1,18 +1,43 @@
-# gitian-builder-dogecoin
+# Gitian building
+
+Setup instructions for a Gitian build of Dogecoin Core using a Docker.
+
+Gitian is the deterministic build process that is used to build the Dogecoin Core executables. It provides a way to be reasonably sure that the executables are really built from the source on GitHub. It also makes sure that the same, tested dependencies are used and statically built into the executable.
+
+Multiple developers build the source code by following a specific descriptor ("recipe"), cryptographically sign the result, and upload the resulting signature. These results are compared and only if they match, the build is accepted and uploaded to dogecoin.com.
+
+More independent Gitian builders are needed, which is why this guide exists. It is preferred you follow these steps yourself instead of using someone else's VM image to avoid 'contaminating' the build.
+
+
+# SUPPORTED DISTRIBUTION
+
+    ubuntu
+    debian
+    centos
+    fedora
+    archlinux
+    macos
 
 # PREREQUISITE
+## AUTOMATED INSTALL
+    1. Launch automated script (ONLY ONCE)
+
+        ./gitian-build.sh --init
+
+## MANUAL INSTALL
     1. Install Docker
+
         https://docs.docker.com/engine/install/
 
     2. Generate GPG key
-        ex: gpg --full-generate-key
 
-    3. INSTALL git
+        https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification/generating-a-new-gpg-key
 
-    4. INSTALL make
+    3. INSTALL those packages:
 
-    5. INSTALL wget
+        sudo git make wget brew(MACOS ONLY)
 
+    
 ## SETUP  (ONLY ONCE)
     ./gitian-build.sh --setup
 

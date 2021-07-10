@@ -1,0 +1,53 @@
+### Global defaults
+
+# Build the branch if it is integration, a pull request, or ends in -ci/-cic (-cic targets only Cirrus CI)
+only_if: $CIRRUS_PR != ''
+
+timeout_in: 120m  # https://cirrus-ci.org/faq/#instance-timed-out
+container:
+  # https://cirrus-ci.org/faq/#are-there-any-limits
+  # Each project has 16 CPU in total, assign 2 to each container, so that 8 tasks run in parallel
+  cpu: 2
+  memory: 2G  # Set to 8GB to avoid OOM. https://cirrus-ci.org/guide/linux/#linux-containers
+  kvm: true  # Use kvm to avoid spurious CI failures in the default virtualization cluster, see https://github.com/bitcoin/bitcoin/issues/20093
+
+# https://cirrus-ci.org/guide/tips-and-tricks/#sharing-configuration-between-tasks
+global_task_template: &GLOBAL_TASK_TEMPLATE
+  ci_script:
+    - ./setup/setup.sh --force
+
+task:
+  name: 'UBUNTU'
+  << : *GLOBAL_TASK_TEMPLATE
+  container:
+    image: ubuntu:latest
+
+task:
+  name: 'DEBIAN'
+  << : *GLOBAL_TASK_TEMPLATE
+  container:
+    image: debian:latest
+
+task:
+  name: 'CENTOS'
+  << : *GLOBAL_TASK_TEMPLATE
+  container:
+    image: centos:latest
+
+task:
+  name: 'FEDORA'
+  << : *GLOBAL_TASK_TEMPLATE
+  container:
+    image: fedora:latest
+
+task:
+  name: 'ARCHLINUX'
+  << : *GLOBAL_TASK_TEMPLATE
+  container:
+    image: archlinux:latest
+
+task:
+  name: 'BIGSUR'
+  << : *GLOBAL_TASK_TEMPLATE
+  macos_instance:
+    image: big-sur-base

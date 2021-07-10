@@ -16,6 +16,7 @@ verify=false
 build=false
 commit=false
 push=false
+init=false
 
 # Systems to build
 linux=true
@@ -123,6 +124,10 @@ while :; do
 	-c|--commit)
 	    commit=true
 	    ;;
+	# Init dependencies
+	-i|--init)
+	    init=true
+	    ;;
 	# Number of Processes
 	-j)
 	    if [ -n "$2" ]
@@ -189,8 +194,24 @@ then
     shift
 fi
 
-if [[ ! $setup = true && ! $push = true ]]
+if [[ ! $setup = true && ! $push = true &&  ! $init = true ]]
 then
+  echo "Testing Docker..."
+  if ! docker ps &> /dev/null
+  then
+    echo "Docker is not launched..."
+    exit 1
+  fi
+
+  echo "Testing GPG Keys available..."
+  result=`gpg --list-secret-keys --keyid-format=long | grep sec | grep -v revoked | grep "" -c`
+  if [[ $result = "" ]]; then
+    echo "No GPG keys available..."
+    echo "Please follow this documentation: https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification/generating-a-new-gpg-key"
+    exit 1
+  fi
+
+  echo ${COMMIT}
   # Check that a signer is specified
   if [[ $SIGNER == "" ]]
   then
@@ -214,16 +235,21 @@ then
 	COMMIT="v${VERSION}"
 fi
 
-echo ${COMMIT}
+# Setup build environment
+if [[ $init = true ]]
+then
+  echo "Setup Dependencies..."
+
+  ./setup/setup.sh
+  exit
+fi
 
 # Setup build environment
 if [[ $setup = true ]]
 then
-  echo "Setup Docker..."
-  ./gitian_setup_docker.sh
-
   git clone https://github.com/micaelmalta/gitian-builder
   pushd gitian-builder
+  git fetch
   git checkout docker
   popd
   git clone https://github.com/dogecoin/gitian.sigs.git
@@ -233,12 +259,10 @@ then
   pushd gitian-builder
   #git checkout remove_trusty_esm
   ./bin/make-base-vm --docker --arch amd64 --suite trusty
-  ../gitian_depedencies.sh
   popd
   exit
 
 fi
-
 
 # Build
 if [[ $build = true ]]

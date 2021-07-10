@@ -3,6 +3,4 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-sudo pacman -S docker
-sudo systemctl start docker
-sudo systemctl enable docker
+brew install docker
