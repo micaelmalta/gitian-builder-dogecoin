@@ -15,12 +15,12 @@ mkdir -p inputs
 pushd inputs
 
 [[ -f $(basename -- $oss_patch_url) ]] || wget $oss_patch_url -O $(basename -- $oss_patch_url)
-[[ `sha256sum $(basename -- $oss_patch_url) | awk '{print $1}'` == $oss_patch_hash ]] || { echo "Signature for $(basename -- $oss_patch_url) don't match"; exit 1; }
+echo "${oss_patch_hash} $(basename -- $oss_patch_url)" | sha256sum -c || { echo "Signature for $(basename -- $oss_patch_url) don't match"; exit 1; }
 
 [[ -f $(basename -- $oss_tar_url) ]] || wget $oss_tar_url -O $(basename -- $oss_tar_url)
-[[ `sha256sum $(basename -- $oss_tar_url) | awk '{print $1}'` == $oss_tar_hash ]] || { echo "Signature for $(basename -- $oss_tar_url) don't match"; exit 1; }
+echo "${oss_tar_hash} $(basename -- $oss_tar_url)" | sha256sum -c || { echo "Signature for $(basename -- $oss_tar_url) don't match"; exit 1; }
 
 [[ -f $(basename -- $macos_sdk_url) ]] || wget $macos_sdk_url -O $(basename -- $macos_sdk_url)
-[[ `sha256sum $(basename -- $macos_sdk_url) | awk '{print $1}'` == $macos_sdk_hash ]] || { echo "Signature for $(basename -- $macos_sdk_url) don't match"; exit 1; }
+echo "${macos_sdk_hash} $(basename -- $macos_sdk_url)" | sha256sum -c || { echo "Signature for $(basename -- $macos_sdk_url) don't match"; exit 1; }
 
 popd
