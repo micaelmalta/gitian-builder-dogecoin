@@ -60,7 +60,7 @@ More independent Gitian builders are needed, which is why this guide exists. It 
     ./gitian-build.sh --push
 
 ## CUSTOM REPOSITORY
-    ./gitian-build.sh -j <jobs> -m <mem> --build --url <repo_url> <signer_name:required> <version:required>
+    ./gitian-build.sh -j <jobs> -m <mem> --build -u <repo_url> <signer_name:required> <version:required>
 
 ## COMPLETE LIST OF PARAMETERS
     ./gitian-build.sh --help
@@ -68,7 +68,7 @@ More independent Gitian builders are needed, which is why this guide exists. It 
 ## Examples:
     ./gitian-build.sh --setup
     
-    ./gitian-build.sh -j 8 -m 8192 --url https://github.com/micaelmalta/dogecoin -B mmicael 1.14.3
+    ./gitian-build.sh -j 8 -m 8192 -u https://github.com/micaelmalta/dogecoin -B mmicael 1.14.3
 
     ./gitian-build.sh -j 8 -m 8192 -B mmicael 1.14.3
 
