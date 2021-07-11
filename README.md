@@ -42,25 +42,33 @@ More independent Gitian builders are needed, which is why this guide exists. It 
     ./gitian-build.sh --setup
 
 ## BUILD
-    ./gitian-build.sh -j <jobs> -m <mem> --build <signer_name> <version>
+    ./gitian-build.sh -j <jobs> -m <mem> --build <signer_name:required> <version:required>
 
 ## VERIFY
-    ./gitian-build.sh --verify <signer_name> <version>
+    ./gitian-build.sh --verify <signer_name:required> <version:required>
 
 ## VERSION vs COMMIT
   For release version: omit `v` 
 
-    ./gitian-build.sh -j <jobs> -m <mem> --build <signer_name> 1.14.3
+    ./gitian-build.sh -j <jobs> -m <mem> --build <signer_name:required> 1.14.3
 
   For commit or branch: use `--commit`
     
-    ./gitian-build.sh -j <jobs> -m <mem> --commit --build <signer_name> <branch|hash>
+    ./gitian-build.sh -j <jobs> -m <mem> --commit --build <signer_name:required> <branch|hash>
 
 ## PUSH SIGN
     ./gitian-build.sh --push
-    
+
+## CUSTOM REPOSITORY
+    ./gitian-build.sh -j <jobs> -m <mem> --build --url <repo_url> <signer_name:required> <version:required>
+
+## COMPLETE LIST OF PARAMETERS
+    ./gitian-build.sh --help
+
 ## Examples:
     ./gitian-build.sh --setup
+    
+    ./gitian-build.sh -j 8 -m 8192 --url https://github.com/micaelmalta/dogecoin -B mmicael 1.14.3
 
     ./gitian-build.sh -j 8 -m 8192 -B mmicael 1.14.3
 
