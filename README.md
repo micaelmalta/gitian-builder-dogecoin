@@ -81,3 +81,9 @@ More independent Gitian builders are needed, which is why this guide exists. It 
 ## License
 
 Dogecoin Core is released under the terms of the MIT license. See COPYING for more information or see https://opensource.org/licenses/MIT.
+
+## OTHER CREDITS
+
+https://github.com/patricklodder
+
+https://gist.github.com/patricklodder/88d6c4e3406db840963f85d95ceb44fe
