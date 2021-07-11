@@ -23,7 +23,7 @@ done
 
 if [[ $force = false ]]; then
   while true; do
-    read -p "Do you really want to install those dependencies: \"sudo docker ${DEPENDENCIES[*]// / }\" ? (y/n) " yn
+    read -p "Do you really want to install those dependencies: \"docker ${DEPENDENCIES[*]// / }\" ? (y/n) " yn
     case $yn in
         [Yy]* ) break;;
         [Nn]* ) exit;;
@@ -34,10 +34,10 @@ fi
 
 package_manager=''
 setup_docker_script=''
-setup_dependencies_script=''
 dependencies=''
 
 echo "OS: $OSTYPE"
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]
 then
   if command -v apt &> /dev/null; then
@@ -61,8 +61,18 @@ then
       echo "Unknown package manager..."
       exit 1
   fi
-  export setup_docker_script="setup/package_manager/setup_${package_manager}_docker.sh"
 
+  if [[ ! $(whoami) = "root" ]]; then
+    if [[ ! $(sudo -v && echo 1) ]]
+    then
+      echo "Sudo is not installed..."
+      exit 1
+    fi
+    echo "Sudo is installed..."
+    sudo='sudo '
+  fi
+
+  export setup_docker_script="setup/package_manager/setup_${package_manager}_docker.sh"
   ./setup/setup_linux.sh
 
 elif [[ "$OSTYPE" == "darwin"* ]]

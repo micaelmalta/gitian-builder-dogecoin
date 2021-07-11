@@ -15,7 +15,7 @@ $sudo apt install -y ruby git build-essential apt-transport-https ca-certificate
 os=`echo $ID | awk '{print tolower($0)}'`
 release=`echo $VERSION_CODENAME | awk '{print tolower($0)}'`
 
-curl -fsSL https://download.docker.com/linux/$os/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+curl -fsSL https://download.docker.com/linux/$os/gpg | $sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo \
   "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/$os \
   $release stable" | $sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
