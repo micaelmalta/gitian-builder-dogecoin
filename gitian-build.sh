@@ -412,3 +412,7 @@ if [[ $push == true ]]; then
   git push
   popd
 fi
+
+pushd dogecoin-binaries/${VERSION}
+sha256sum *
+popd
