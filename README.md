@@ -69,4 +69,7 @@ More independent Gitian builders are needed, which is why this guide exists. It 
     ./gitian-build.sh -j 8 -m 8192 --commit -B mmicael 1.14.4-dev
 
     ./gitian-build.sh --push
-    
+
+## License
+
+Dogecoin Core is released under the terms of the MIT license. See COPYING for more information or see https://opensource.org/licenses/MIT.
