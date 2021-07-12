@@ -10,6 +10,9 @@ unset USE_LXC
 unset USE_VBOX
 export USE_DOCKER=1
 
+#SYSTEMS TO BUILD
+DESCRIPTORS=('linux' 'win' 'osx')
+
 # What to do
 sign=false
 verify=false
@@ -17,11 +20,6 @@ build=false
 commit=false
 push=false
 init=false
-
-# Systems to build
-linux=true
-windows=true
-osx=true
 
 # Other Basic variables
 SIGNER=
@@ -92,17 +90,19 @@ while :; do
   # Operating Systems
   -o | --os)
     if [ -n "$2" ]; then
-      linux=false
-      windows=false
-      osx=false
+      DESCRIPTORS=()
       if [[ "$2" == *"l"* ]]; then
-        linux=true
+        DESCRIPTORS+=('linux')
       fi
       if [[ "$2" == *"w"* ]]; then
-        windows=true
+        DESCRIPTORS+=('win')
       fi
       if [[ "$2" == *"x"* ]]; then
-        osx=true
+        if [[ ! -e "gitian-builder/inputs/MacOSX10.11.sdk.tar.gz" && $build == true ]]; then
+          echo "Cannot build for OSX, SDK does not exist. Will build for other OSes"
+        else
+          DESCRIPTORS+=('osx')
+        fi
       fi
       shift
     else
@@ -230,7 +230,9 @@ if [[ $init == true ]]; then
   exit
 fi
 
-# Setup build environment
+#######################
+######## SETUP ########
+#######################
 if [[ $setup == true ]]; then
   git clone https://github.com/dogecoin/gitian.sigs.git
   git clone https://github.com/dogecoin/dogecoin-detached-sigs.git
@@ -249,13 +251,10 @@ if [[ $setup == true ]]; then
 
 fi
 
-# Build
+#######################
+######## BUILD ########
+#######################
 if [[ $build == true ]]; then
-  # Check for OSX SDK
-  if [[ ! -e "gitian-builder/inputs/MacOSX10.11.sdk.tar.gz" && $osx == true ]]; then
-    echo "Cannot build for OSX, SDK does not exist. Will build for other OSes"
-    osx=false
-  fi
 
   # Set up build
   pushd ./dogecoin
@@ -272,27 +271,29 @@ if [[ $build == true ]]; then
 
   make -j "${proc}" -C ../dogecoin/depends download SOURCES_PATH=$(pwd)/cache/common
 
-  # Linux
-  if [[ $linux == true ]]; then
+  for descriptor in "${DESCRIPTORS[@]}"; do
     echo ""
-    echo "Compiling ${VERSION} Linux"
+    echo "Compiling ${VERSION} ${descriptor}"
     echo ""
-    ./bin/gbuild -j ${proc} -m ${mem} --commit dogecoin=${COMMIT} --url dogecoin=${url} ../dogecoin/contrib/gitian-descriptors/gitian-linux.yml
-  fi
-  # Windows
-  if [[ $windows == true ]]; then
+    ./bin/gbuild -j ${proc} -m ${mem} --commit dogecoin=${COMMIT} --url dogecoin=${url} ../dogecoin/contrib/gitian-descriptors/gitian-${descriptor}.yml
+  done
+
+  popd
+fi
+
+######################
+######## SIGN ########
+######################
+if [[ $sign == true ]]; then
+  pushd gitian-builder
+
+  for descriptor in "${DESCRIPTORS[@]}"; do
     echo ""
-    echo "Compiling ${VERSION} Windows"
+    echo "Signing ${VERSION} ${descriptor}"
     echo ""
-    ./bin/gbuild -j ${proc} -m ${mem} --commit dogecoin=${COMMIT} --url dogecoin=${url} ../dogecoin/contrib/gitian-descriptors/gitian-win.yml
-  fi
-  # Mac OSX
-  if [[ $osx == true ]]; then
-    echo ""
-    echo "Compiling ${VERSION} Mac OSX"
-    echo ""
-    ./bin/gbuild -j ${proc} -m ${mem} --commit dogecoin=${COMMIT} --url dogecoin=${url} ../dogecoin/contrib/gitian-descriptors/gitian-osx.yml
-  fi
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-${descriptor} --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-${descriptor}.yml
+  done
+
   popd
 
   if [[ $commitFiles == true ]]; then
@@ -301,113 +302,54 @@ if [[ $build == true ]]; then
     echo "Committing ${VERSION} Unsigned Sigs"
     echo ""
     pushd gitian.sigs
-    git add ${VERSION}-linux/${SIGNER}
-    git add ${VERSION}-win-unsigned/${SIGNER}
-    git add ${VERSION}-osx-unsigned/${SIGNER}
+    for descriptor in "${DESCRIPTORS[@]}"; do
+      git add ${VERSION}-${descriptor}/${SIGNER}
+    done
     git commit -a -m "Add ${VERSION} unsigned sigs for ${SIGNER}"
     popd
   fi
 fi
 
-# Verify the build
+######################
+####### VERIFY #######
+######################
 if [[ $verify == true ]]; then
-  # Linux
   pushd ./gitian-builder
-  echo ""
-  echo "Verifying v${VERSION} Linux"
-  echo ""
-  ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-linux ../dogecoin/contrib/gitian-descriptors/gitian-linux.yml
-  # Windows
-  echo ""
-  echo "Verifying v${VERSION} Windows"
-  echo ""
-  ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-unsigned ../dogecoin/contrib/gitian-descriptors/gitian-win.yml
-  # Mac OSX
-  echo ""
-  echo "Verifying v${VERSION} Mac OSX"
-  echo ""
-  ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-unsigned ../dogecoin/contrib/gitian-descriptors/gitian-osx.yml
-  #	# Signed Windows
-  #	echo ""
-  #	echo "Verifying v${VERSION} Signed Windows"
-  #	echo ""
-  #	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-  #	# Signed Mac OSX
-  #	echo ""
-  #	echo "Verifying v${VERSION} Signed Mac OSX"
-  #	echo ""
-  #	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+
+  for descriptor in "${DESCRIPTORS[@]}"; do
+    echo ""
+    echo "Verifying v${VERSION} ${descriptor}"
+    echo ""
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-${descriptor} ../dogecoin/contrib/gitian-descriptors/gitian-${descriptor}.yml
+  done
+
   popd
 fi
 
-if [[ $sign == true ]]; then
-  if [[ $linux == true ]]; then
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-linux --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-linux.yml
-    mv build/out/dogecoin-*.tar.gz build/out/src/dogecoin-*.tar.gz ../dogecoin-binaries/${VERSION}
-  fi
-
-  if [[ $windows == true ]]; then
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-unsigned --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-win.yml
-    mv build/out/dogecoin-*-win-unsigned.tar.gz inputs/dogecoin-win-unsigned.tar.gz
-    mv build/out/dogecoin-*.zip build/out/dogecoin-*.exe ../dogecoin-binaries/${VERSION}
-  fi
-
-  if [[ $osx == true ]]; then
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-osx.yml
-    mv build/out/dogecoin-*-osx-unsigned.tar.gz inputs/dogecoin-osx-unsigned.tar.gz
-    mv build/out/dogecoin-*.tar.gz build/out/dogecoin-*.dmg ../dogecoin-binaries/${VERSION}
-  fi
+#####################
+####### BUILD #######
+#####################
+if [[ $build == true ]]; then
+  pushd gitian-builder
+  mv build/out/dogecoin-*.tar.gz build/out/src/dogecoin-*.tar.gz ../dogecoin-binaries/${VERSION}
+  mv build/out/dogecoin-*.zip build/out/dogecoin-*.exe ../dogecoin-binaries/${VERSION}
+  mv build/out/dogecoin-*.dmg ../dogecoin-binaries/${VERSION}
+  popd
 fi
 
-# Sign binaries
-#if [[ $sign = true ]]
-#then
-#
-#  pushd ./gitian-builder
-#	# Sign Windows
-#	if [[ $windows = true ]]
-#	then
-#	    echo ""
-#	    echo "Signing ${VERSION} Windows"
-#	    echo ""
-#	    ./bin/gbuild -i --commit signature=${COMMIT} ../dogecoin/contrib/gitian-descriptors/gitian-win-signer.yml
-#	    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-win-signer.yml
-#	    mv build/out/dogecoin-*win64-setup.exe ../dogecoin-binaries/${VERSION}
-#	    mv build/out/dogecoin-*win32-setup.exe ../dogecoin-binaries/${VERSION}
-#	fi
-#	# Sign Mac OSX
-#	if [[ $osx = true ]]
-#	then
-#	    echo ""
-#	    echo "Signing ${VERSION} Mac OSX"
-#	    echo ""
-#	    ./bin/gbuild -i --commit signature=${COMMIT} ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-#	    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../dogecoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-#	    mv build/out/dogecoin-osx-signed.dmg ../dogecoin-binaries/${VERSION}/dogecoin-${VERSION}-osx.dmg
-#	fi
-#	popd
-#
-#        if [[ $commitFiles = true ]]
-#        then
-#            # Commit Sigs
-#            pushd gitian.sigs
-#            echo ""
-#            echo "Committing ${VERSION} Signed Sigs"
-#            echo ""
-#            git add ${VERSION}-win-signed/${SIGNER}
-#            git add ${VERSION}-osx-signed/${SIGNER}
-#            git commit -a -m "Add ${VERSION} signed binary sigs for ${SIGNER}"
-#            popd
-#        fi
-#fi
-
-# Sign binaries
+####################
+####### PUSH #######
+####################
 if [[ $push == true ]]; then
   pushd gitian.sigs
   git push
   popd
 fi
 
-pushd gitian-builder/build/out/
-sha256sum dogecoin-*${VERSION}*
+#######################
+####### DISPLAY #######
+#######################
+pushd dogecoin-binaries/${VERSION}
+echo ${VERSION}
+sha256sum dogecoin-*
 popd
