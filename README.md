@@ -1,3 +1,9 @@
+<h1 align="center">
+Dogecoin Core [DOGE, Ð]  
+<br/><br/>
+<img src="https://static.tumblr.com/ppdj5y9/Ae9mxmxtp/300coin.png" alt="Dogecoin" width="300"/>
+</h1>
+
 # Gitian building
 
 Setup instructions for a Gitian build of Dogecoin Core using a Docker.
