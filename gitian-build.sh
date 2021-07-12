@@ -408,6 +408,6 @@ if [[ $push == true ]]; then
   popd
 fi
 
-pushd dogecoin-binaries/${VERSION}
-sha256sum *
+pushd gitian-builder/build/out/
+sha256sum dogecoin-*${VERSION}*
 popd
