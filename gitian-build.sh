@@ -243,7 +243,7 @@ if [[ $setup == true ]]; then
   git clone $url
 
   pushd gitian-builder
-   ./bin/make-base-vm --disable-apt-cacher --docker --arch amd64 --suite trusty
+   ./bin/make-base-vm --docker --arch amd64 --suite trusty
   ../setup/dependencies.sh
   popd
   exit
