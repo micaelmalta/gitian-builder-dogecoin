@@ -232,17 +232,16 @@ fi
 
 # Setup build environment
 if [[ $setup == true ]]; then
-  git clone https://github.com/micaelmalta/gitian-builder
-  pushd gitian-builder
-  git fetch
-  git checkout docker
-  git reset --hard origin/docker
-  popd
   git clone https://github.com/dogecoin/gitian.sigs.git
   git clone https://github.com/dogecoin/dogecoin-detached-sigs.git
   git clone $url
 
+  git clone https://github.com/micaelmalta/gitian-builder
   pushd gitian-builder
+  git fetch
+  git checkout docker
+  git reset --hard docker
+
    ./bin/make-base-vm --docker --arch amd64 --suite trusty
   ../setup/dependencies.sh
   popd
@@ -263,7 +262,7 @@ if [[ $build == true ]]; then
   git remote set-url origin $url
   git fetch
   git checkout ${COMMIT}
-  git reset --hard origin/${COMMIT}
+  git reset --hard ${COMMIT}
   popd
 
   # Make output folder
