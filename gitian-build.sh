@@ -242,12 +242,8 @@ if [[ $setup == true ]]; then
   git clone https://github.com/dogecoin/dogecoin-detached-sigs.git
   git clone $url
 
-  docker build --pull -f apt_cacher_ng.Dockerfile -t apt_cacher_ng .
-  docker run -d -p 3142:3142 --name apt_cacher_ng apt_cacher_ng
-
   pushd gitian-builder
-  export MIRROR_HOST=127.0.0.1
-   ./bin/make-base-vm --docker --arch amd64 --suite trusty
+   ./bin/make-base-vm --disable-apt-cacher --docker --arch amd64 --suite trusty
   ../setup/dependencies.sh
   popd
   exit
