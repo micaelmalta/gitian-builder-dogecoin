@@ -62,7 +62,7 @@ More independent Gitian builders are needed, which is why this guide exists. It 
     
     ./gitian-build.sh -j <jobs> -m <mem> --commit --build <signer_name:required> <branch|hash>
 
-## PUSH SIGN
+## PUSH SIGN TO gitian.sigs
     ./gitian-build.sh --push
 
 ## CUSTOM REPOSITORY
@@ -74,13 +74,13 @@ More independent Gitian builders are needed, which is why this guide exists. It 
 ## Examples:
     ./gitian-build.sh --setup
     
-    ./gitian-build.sh -j 8 -m 8192 -u https://github.com/micaelmalta/dogecoin -B mmicael 1.14.3
+    ./gitian-build.sh -j 8 -m 8192 -u https://github.com/micaelmalta/dogecoin --build mmicael 1.14.3
 
-    ./gitian-build.sh -j 8 -m 8192 -B mmicael 1.14.3
+    ./gitian-build.sh -j 8 -m 8192 --build mmicael 1.14.3
 
     or
 
-    ./gitian-build.sh -j 8 -m 8192 --commit -B mmicael 1.14.4-dev
+    ./gitian-build.sh -j 8 -m 8192 --commit --build mmicael 1.14.4-dev
 
     ./gitian-build.sh --push
 
