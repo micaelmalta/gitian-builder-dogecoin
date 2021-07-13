@@ -12,6 +12,7 @@ export USE_DOCKER=1
 
 #SYSTEMS TO BUILD
 DESCRIPTORS=('linux' 'win' 'osx')
+SIGN_DESCRIPTORS=('win-signed' 'osx-signed')
 
 # What to do
 sign=false
@@ -30,30 +31,34 @@ mem=2000
 scriptName=$(basename -- "$0")
 commitFiles=true
 
-# Help Message
+######################
+######## HELP ########
+######################
 read -r -d '' usage <<-EOF
 Usage: $scriptName [-c|u|v|b|s|B|o|h|j|m|] signer version
 Run this script from the directory containing the dogecoin, gitian-builder, gitian.sigs, and dogecoin-detached-sigs.
 Arguments:
 signer          GPG signer to sign each build assert file
-version		Version number, commit, or branch to build. If building a commit or branch, the -c option must be specified
+version		      Version number, commit, or branch to build. If building a commit or branch, the -c option must be specified
 Options:
--c|--commit	Indicate that the version argument is for a commit or branch
--u|--url	Specify the URL of the repository. Default is https://github.com/dogecoin/dogecoin
--v|--verify 	Verify the gitian build
--b|--build	Do a gitian build
--s|--sign	Make signed binaries for Windows and Mac OSX
--B|--buildsign	Build both signed and unsigned binaries
--o|--os		Specify which Operating Systems the build is for. Default is lwx. l for linux, w for windows, x for osx
--j		Number of processes to use. Default $proc
--m		Memory to allocate in MiB. Default $mem
+-c|--commit	    Indicate that the version argument is for a commit or branch
+-u|--url	      Specify the URL of the repository. Default is https://github.com/dogecoin/dogecoin
+-v|--verify 	  Verify the gitian build
+-b|--build	    Do a gitian build
+-s|--sign       Signed build
+-B|--buildsign  Build and sign
+-o|--os		      Specify which Operating Systems the build is for. Default is lwx. l for linux, w for windows, x for osx
+-j		          Number of processes to use. Default $proc
+-m		          Memory to allocate in MiB. Default $mem
 --setup         Setup the gitian building environment. Uses Docker.
 --detach-sign   Create the assert file for detached signing. Will not commit anything.
 --no-commit     Do not commit anything to git
--h|--help	Print this help message
+-h|--help	      Print this help message
 EOF
 
-# Get options and arguments
+##############################
+######## OPTIONS/ARGS ########
+##############################
 while :; do
   case $1 in
   # Verify
@@ -91,17 +96,20 @@ while :; do
   -o | --os)
     if [ -n "$2" ]; then
       DESCRIPTORS=()
+      SIGN_DESCRIPTORS=()
       if [[ "$2" == *"l"* ]]; then
         DESCRIPTORS+=('linux')
       fi
       if [[ "$2" == *"w"* ]]; then
         DESCRIPTORS+=('win')
+        SIGN_DESCRIPTORS+=('win-signed')
       fi
       if [[ "$2" == *"x"* ]]; then
         if [[ ! -e "gitian-builder/inputs/MacOSX10.11.sdk.tar.gz" && $build == true ]]; then
           echo "Cannot build for OSX, SDK does not exist. Will build for other OSes"
         else
-          DESCRIPTORS+=('osx')
+          #DESCRIPTORS+=('osx')
+          SIGN_DESCRIPTORS+=('osx-signed')
         fi
       fi
       shift
@@ -193,7 +201,7 @@ fi
 
 #############################
 ######## ENV TESTING ########
-############################
+#############################
 if [[ $setup == true ]]; then
   echo "Testing Docker..."
   if ! docker ps &>/dev/null; then
@@ -202,7 +210,7 @@ if [[ $setup == true ]]; then
   fi
 fi
 
-if [[ ! $sign == true ]]; then
+if [[ $sign == true ]]; then
   echo "Testing GPG Keys available..."
   result=$(gpg --list-secret-keys --keyid-format=long | grep sec | grep -v revoked | grep "" -c)
   if [[ $result == "" ]]; then
@@ -219,7 +227,7 @@ if [[ ! $sign == true ]]; then
   fi
 fi
 
-if [[ $init == false && $push == false ]]; then
+if [[ $init == false && $push == false && setup == false ]]; then
   # Check that a version is specified
   if [[ $VERSION == "" ]]; then
     echo "$scriptName: Missing version."
@@ -244,20 +252,18 @@ fi
 if [[ $setup == true ]]; then
   git clone https://github.com/dogecoin/gitian.sigs.git
   git clone https://github.com/dogecoin/dogecoin-detached-sigs.git
-  git clone "$url"
-
   git clone https://github.com/micaelmalta/gitian-builder
 
-  pushd gitian-builder || exit
+  pushd gitian-builder || exit 1
 
   git fetch
   git checkout docker
-  git reset --hard docker
+  git checkout --hard origin docker
 
-   ./bin/make-base-vm --docker --arch amd64 --suite trusty
-  ../setup/dependencies.sh
+   ./bin/make-base-vm --docker --arch amd64 --suite trusty || exit 1
+  ../setup/dependencies.sh || exit 1
 
-  popd  || exit
+  popd  || exit 1
   exit
 
 fi
@@ -267,22 +273,10 @@ fi
 #######################
 if [[ $build == true ]]; then
 
-  # Set up build
-  pushd ./dogecoin || exit
-
-  git remote set-url origin "$url"
-  git fetch
-  git checkout "$COMMIT"
-  git reset --hard "$COMMIT"
-
-  popd  || exit
-
   # Make output folder
   mkdir -p ./dogecoin-binaries/"$VERSION"
 
-  pushd ./gitian-builder || exit
-
-  #make -j "${proc}" -C ../dogecoin/depends download SOURCES_PATH="$(pwd)"/cache/common
+  pushd ./gitian-builder || exit 1
 
   for descriptor in "${DESCRIPTORS[@]}"; do
     echo ""
@@ -291,15 +285,6 @@ if [[ $build == true ]]; then
     ./bin/gbuild -j "$proc" -m "$mem" --commit dogecoin="$COMMIT" --url dogecoin="$url" ../gitian-descriptors/gitian-"$descriptor".yml
   done
 
-  popd  || exit
-fi
-
-######################
-######## SIGN ########
-######################
-if [[ $sign == true ]]; then
-  pushd gitian-builder || exit
-
   for descriptor in "${DESCRIPTORS[@]}"; do
     echo ""
     echo "Signing ${VERSION} ${descriptor}"
@@ -307,10 +292,10 @@ if [[ $sign == true ]]; then
     ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$descriptor".yml
   done
 
-  popd  || exit
+  popd  || exit 1
 
   if [[ $commitFiles == true ]]; then
-    pushd gitian.sigs || exit
+    pushd gitian.sigs || exit 1
 
     for descriptor in "${DESCRIPTORS[@]}"; do
       echo ""
@@ -324,15 +309,39 @@ if [[ $sign == true ]]; then
       git push
     fi
 
-    popd  || exit
+    popd  || exit 1
   fi
+
+fi
+
+######################
+######## SIGN ########
+######################
+if [[ $sign == true ]]; then
+  pushd gitian-builder || exit 1
+
+  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
+    echo ""
+    echo "Compiling Binary ${VERSION} ${sign_descriptor}"
+    echo ""
+    ./bin/gbuild --skip-image --upgrade --commit signature="$COMMIT" ../gitian-descriptors/gitian-"$sign_descriptor".yml
+  done
+
+  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
+    echo ""
+    echo "Signing Binary ${VERSION} ${descriptor}"
+    echo ""
+    ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$sign_descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$sign_descriptor".yml
+  done
+
+  popd  || exit 1
 fi
 
 ######################
 ####### VERIFY #######
 ######################
 if [[ $verify == true ]]; then
-  pushd ./gitian-builder || exit
+  pushd ./gitian-builder || exit 1
 
   for descriptor in "${DESCRIPTORS[@]}"; do
     echo ""
@@ -341,30 +350,30 @@ if [[ $verify == true ]]; then
     ./bin/gverify -v -d ../gitian.sigs/ -r "${VERSION}"-"$descriptor" ../gitian-descriptors/gitian-"$descriptor".yml
   done
 
-  popd  || exit
+  popd  || exit 1
 fi
 
 #####################
-####### BUILD #######
+####### MOVE #######
 #####################
 if [[ $build == true ]]; then
-  pushd gitian-builder || exit
+  pushd gitian-builder || exit 1
 
   mv build/out/dogecoin-*.tar.gz build/out/src/dogecoin-*.tar.gz ../dogecoin-binaries/"$VERSION"
   mv build/out/dogecoin-*.zip build/out/dogecoin-*.exe ../dogecoin-binaries/"$VERSION"
   mv build/out/dogecoin-*.dmg ../dogecoin-binaries/"$VERSION"
 
-  popd  || exit
+  popd  || exit 1
 fi
 
 #######################
 ####### DISPLAY #######
 #######################
 if [[ -n "$VERSION" ]]; then
-  pushd dogecoin-binaries/"$VERSION" || exit
+  pushd dogecoin-binaries/"$VERSION" || exit 1
 
   echo "$VERSION"
   sha256sum dogecoin-*
 
-  popd  || exit
+  popd  || exit 1
 fi

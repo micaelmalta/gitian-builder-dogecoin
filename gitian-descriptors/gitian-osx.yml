@@ -1,5 +1,5 @@
 ---
-name: "dogecoin-osx-1.14"
+name: "dogecoin-osx"
 enable_cache: true
 suites:
 - "trusty"

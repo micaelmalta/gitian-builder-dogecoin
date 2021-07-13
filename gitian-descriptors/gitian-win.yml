@@ -1,5 +1,5 @@
 ---
-name: "dogecoin-win-1.14"
+name: "dogecoin-win"
 enable_cache: true
 suites:
 - "trusty"
