@@ -51,3 +51,7 @@ task:
   << : *GLOBAL_TASK_TEMPLATE
   macos_instance:
     image: big-sur-base
+
+task:
+  name: "BUILD"
+  trigger_type: manual
