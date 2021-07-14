@@ -11,7 +11,7 @@ unset USE_VBOX
 export USE_DOCKER=1
 
 #SYSTEMS TO BUILD
-DESCRIPTORS=('linux' 'win' 'osx')
+DESCRIPTORS=('osx' 'win' 'linux')
 SIGN_DESCRIPTORS=('win-signed' 'osx-signed')
 
 # What to do
@@ -108,7 +108,7 @@ while :; do
         if [[ ! -e "gitian-builder/inputs/MacOSX10.11.sdk.tar.gz" && $build == true ]]; then
           echo "Cannot build for OSX, SDK does not exist. Will build for other OSes"
         else
-          #DESCRIPTORS+=('osx')
+          DESCRIPTORS+=('osx')
           SIGN_DESCRIPTORS+=('osx-signed')
         fi
       fi
@@ -285,12 +285,14 @@ if [[ $build == true ]]; then
     ./bin/gbuild -j "$proc" -m "$mem" --commit dogecoin="$COMMIT" --url dogecoin="$url" ../gitian-descriptors/gitian-"$descriptor".yml
   done
 
-  for descriptor in "${DESCRIPTORS[@]}"; do
-    echo ""
-    echo "Signing ${VERSION} ${descriptor}"
-    echo ""
-    ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$descriptor".yml
-  done
+  if [[ $sign == true ]]; then
+    for descriptor in "${DESCRIPTORS[@]}"; do
+      echo ""
+      echo "Signing ${VERSION} ${descriptor}"
+      echo ""
+      ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$descriptor".yml
+    done
+  fi
 
   popd  || exit 1
 
@@ -314,28 +316,29 @@ if [[ $build == true ]]; then
 
 fi
 
-######################
-######## SIGN ########
-######################
-if [[ $sign == true ]]; then
-  pushd gitian-builder || exit 1
-
-  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
-    echo ""
-    echo "Compiling Binary ${VERSION} ${sign_descriptor}"
-    echo ""
-    ./bin/gbuild --skip-image --upgrade --commit signature="$COMMIT" ../gitian-descriptors/gitian-"$sign_descriptor".yml
-  done
-
-  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
-    echo ""
-    echo "Signing Binary ${VERSION} ${descriptor}"
-    echo ""
-    ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$sign_descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$sign_descriptor".yml
-  done
-
-  popd  || exit 1
-fi
+###############################
+######## SIGN BINARIES ########
+###############################
+# COMMENTED FOR NOW AS WE DONT HAVE APPLE KEY
+#if [[ $sign == true ]]; then
+#  pushd gitian-builder || exit 1
+#
+#  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
+#    echo ""
+#    echo "Compiling Binary ${VERSION} ${sign_descriptor}"
+#    echo ""
+#    ./bin/gbuild --skip-image --upgrade --commit signature="$COMMIT" ../gitian-descriptors/gitian-"$sign_descriptor".yml
+#  done
+#
+#  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
+#    echo ""
+#    echo "Signing Binary ${VERSION} ${descriptor}"
+#    echo ""
+#    ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$sign_descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$sign_descriptor".yml
+#  done
+#
+#  popd  || exit 1
+#fi
 
 ######################
 ####### VERIFY #######
