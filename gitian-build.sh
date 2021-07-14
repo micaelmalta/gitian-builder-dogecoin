@@ -252,13 +252,13 @@ fi
 if [[ $setup == true ]]; then
   git clone https://github.com/dogecoin/gitian.sigs.git
   git clone https://github.com/dogecoin/dogecoin-detached-sigs.git
-  git clone https://github.com/micaelmalta/gitian-builder
+  git clone https://github.com/devrandom/gitian-builder
 
   pushd gitian-builder || exit 1
 
-  git fetch
-  git checkout docker
-  git checkout --hard origin docker
+  git fetch origin 9e97a4d5038cd61215f5243a37c06fa1734a276e # LAST VERSION TESTED
+  git reset --hard FETCH_HEAD
+  git am < ../patches/0001-Docker-apt-cacher.patch
 
    ./bin/make-base-vm --docker --arch amd64 --suite trusty || exit 1
   ../setup/dependencies.sh || exit 1
