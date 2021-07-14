@@ -29,6 +29,7 @@ url=https://github.com/dogecoin/dogecoin
 proc=2
 mem=2000
 scriptName=$(basename -- "$0")
+dirName=$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 commitFiles=true
 
 ######################
@@ -242,7 +243,7 @@ fi
 if [[ $init == true ]]; then
   echo "Setup Dependencies..."
 
-  ./setup/setup.sh
+  "$dirName"/setup/setup.sh
   exit
 fi
 
@@ -258,10 +259,10 @@ if [[ $setup == true ]]; then
 
   git fetch origin 9e97a4d5038cd61215f5243a37c06fa1734a276e # LAST VERSION TESTED
   git reset --hard FETCH_HEAD
-  git am < ../patches/0001-Docker-apt-cacher.patch
+  git am < "$dirName"/patches/0001-Docker-apt-cacher.patch
 
    ./bin/make-base-vm --docker --arch amd64 --suite trusty || exit 1
-  ../setup/dependencies.sh || exit 1
+  "$dirName"/setup/dependencies.sh || exit 1
 
   popd  || exit 1
   exit
@@ -271,9 +272,9 @@ fi
 function download_descriptor() {
   descriptor_name="${1/signed/signer}" # UGLY FIX BECAUSE OF INCONSISTENT NAMING
 
-  uri="${url/github\.com/raw\.githubusercontent\.com}"/"$2"/contrib/gitian-descriptors/gitian-"$descriptor_name".yml
+  uri="${url/github.com/raw.githubusercontent.com}"/"$2"/contrib/gitian-descriptors/gitian-"$descriptor_name".yml
   echo "Downloading descriptor ${descriptor_name} ${uri}"
-  wget $uri -O gitian-descriptors/gitian-"$descriptor_name".yml || exit 1
+  wget $uri -O gitian-"$descriptor_name".yml || exit 1
 }
 
 #############################
@@ -281,17 +282,22 @@ function download_descriptor() {
 #############################
 # Make descriptors folder
 mkdir -p ./gitian-descriptors/
+
+pushd gitian-descriptors || exit 1
+
 if [[ $build == true || $verify == true ]]; then
   for descriptor in "${DESCRIPTORS[@]}"; do
-    download_descriptor "$descriptor" "$VERSION"
+    download_descriptor "$descriptor" "$COMMIT"
   done
 fi
 
 if [[ $sign == true ]]; then
   for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
-    download_descriptor "$sign_descriptor" "$VERSION"
+    download_descriptor "$sign_descriptor" "$COMMIT"
   done
 fi
+
+popd
 
 #######################
 ######## BUILD ########
