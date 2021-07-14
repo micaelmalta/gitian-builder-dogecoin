@@ -362,8 +362,10 @@ fi
 if [[ $build == true ]]; then
   pushd gitian-builder || exit 1
 
-  mv build/out/dogecoin-*.tar.gz build/out/src/dogecoin-*.tar.gz ../dogecoin-binaries/"$VERSION"
-  mv build/out/dogecoin-*.zip build/out/dogecoin-*.exe ../dogecoin-binaries/"$VERSION"
+  mv build/out/dogecoin-*.tar.gz ../dogecoin-binaries/"$VERSION"
+  mv build/out/src/dogecoin-*.tar.gz ../dogecoin-binaries/"$VERSION"
+  mv build/out/dogecoin-*.zip ../dogecoin-binaries/"$VERSION"
+  mv build/out/dogecoin-*.exe ../dogecoin-binaries/"$VERSION"
   mv build/out/dogecoin-*.dmg ../dogecoin-binaries/"$VERSION"
 
   popd  || exit 1
