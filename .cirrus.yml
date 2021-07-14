@@ -20,7 +20,6 @@ global_task_template: &GLOBAL_TASK_TEMPLATE
     - ./setup/setup.sh --force
 
 global_compute_template: &GLOBAL_COMPUTE_TEMPLATE
-  only_if: $CIRRUS_BRANCH =~ 'build_.*'
   image_project: cirrus-images
   image: family/docker-builder
   platform: linux
@@ -28,6 +27,7 @@ global_compute_template: &GLOBAL_COMPUTE_TEMPLATE
   memory: 8G
 
 build_task_template: &BUILD_TASK_TEMPLATE
+  only_if: $CIRRUS_BRANCH =~ 'build_.*'
   prescript:
     - bash -c "$PACKAGE_MANAGER_INSTALL git"
   script:
