@@ -268,6 +268,31 @@ if [[ $setup == true ]]; then
 
 fi
 
+function download_descriptor() {
+  descriptor_name="${1/signed/signer}" # UGLY FIX BECAUSE OF INCONSISTENT NAMING
+
+  uri="${url/github\.com/raw\.githubusercontent\.com}"/"$2"/contrib/gitian-descriptors/gitian-"$descriptor_name".yml
+  echo "Downloading descriptor ${descriptor_name} ${uri}"
+  wget $uri -O gitian-descriptors/gitian-"$descriptor_name".yml || exit 1
+}
+
+#############################
+######## DESCRIPTORS ########
+#############################
+# Make descriptors folder
+mkdir -p ./gitian-descriptors/
+if [[ $build == true || $verify == true ]]; then
+  for descriptor in "${DESCRIPTORS[@]}"; do
+    download_descriptor "$descriptor" "$VERSION"
+  done
+fi
+
+if [[ $sign == true ]]; then
+  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
+    download_descriptor "$sign_descriptor" "$VERSION"
+  done
+fi
+
 #######################
 ######## BUILD ########
 #######################
@@ -319,26 +344,25 @@ fi
 ###############################
 ######## SIGN BINARIES ########
 ###############################
-# COMMENTED FOR NOW AS WE DONT HAVE APPLE KEY
-#if [[ $sign == true ]]; then
-#  pushd gitian-builder || exit 1
-#
-#  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
-#    echo ""
-#    echo "Compiling Binary ${VERSION} ${sign_descriptor}"
-#    echo ""
-#    ./bin/gbuild --skip-image --upgrade --commit signature="$COMMIT" ../gitian-descriptors/gitian-"$sign_descriptor".yml
-#  done
-#
-#  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
-#    echo ""
-#    echo "Signing Binary ${VERSION} ${descriptor}"
-#    echo ""
-#    ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$sign_descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$sign_descriptor".yml
-#  done
-#
-#  popd  || exit 1
-#fi
+if [[ $sign == true ]]; then
+  pushd gitian-builder || exit 1
+
+  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
+    echo ""
+    echo "Compiling Binary ${VERSION} ${sign_descriptor}"
+    echo ""
+    ./bin/gbuild --skip-image --upgrade --commit signature="$COMMIT" ../gitian-descriptors/gitian-"$sign_descriptor".yml
+  done
+
+  for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
+    echo ""
+    echo "Signing Binary ${VERSION} ${descriptor}"
+    echo ""
+    ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$sign_descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$sign_descriptor".yml
+  done
+
+  popd  || exit 1
+fi
 
 ######################
 ####### VERIFY #######
@@ -362,11 +386,10 @@ fi
 if [[ $build == true ]]; then
   pushd gitian-builder || exit 1
 
-  mv build/out/dogecoin-*.tar.gz ../dogecoin-binaries/"$VERSION"
-  mv build/out/src/dogecoin-*.tar.gz ../dogecoin-binaries/"$VERSION"
-  mv build/out/dogecoin-*.zip ../dogecoin-binaries/"$VERSION"
-  mv build/out/dogecoin-*.exe ../dogecoin-binaries/"$VERSION"
-  mv build/out/dogecoin-*.dmg ../dogecoin-binaries/"$VERSION"
+  BUILD_FILES=('dogecoin-*.tar.gz' 'src/dogecoin-*.tar.gz' 'dogecoin-*.zip' 'dogecoin-*.exe' 'dogecoin-*.dmg')
+  for build_file in "${BUILD_FILES[@]}"; do
+    mv build/out/"$build_file" ../dogecoin-binaries/"$VERSION" 2>/dev/null
+  done
 
   popd  || exit 1
 fi
