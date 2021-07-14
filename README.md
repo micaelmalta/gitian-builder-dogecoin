@@ -84,6 +84,24 @@ More independent Gitian builders are needed, which is why this guide exists. It 
 
     ./gitian-build.sh --push
 
+## CI TESTING
+
+The purpose of this is to be able to check that builds work with GITIAN using CIRRUS: https://github.com/marketplace/cirrus-ci
+
+### HOW TO DO A GITIAN BUILD
+
+    1/ Fork repo: https://github.com/micaelmalta/gitian-builder-dogecoin
+    2/ git clone <your_repo>
+    3/ git checkout -b build_<whatever> # IMPORTANT PART AS GITIAN BUILD ARE ONLY BUILD ON build_* branches
+    4/ vim .cirrus.yml
+    5/ Change those 2 values:
+        URL: https://github.com/mmicael/dogecoin
+        BRANCH: 1.14.4-libevent
+    6/ git commit -m "whatever"
+    7/ git push --set-upstream origin <your_branch>
+    8/ Wait 45mn!
+    9/ ENJOY!
+
 ## TROUBLESHOOT
     
 ### DOCKER ERROR
