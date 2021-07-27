@@ -21,7 +21,6 @@ verify=false
 build=false
 commit=false
 push=false
-init=false
 test=false
 
 # Other Basic variables
@@ -130,10 +129,6 @@ while :; do
   # Commit or branch
   -c | --commit)
     commit=true
-    ;;
-  # Init dependencies
-  -i | --init)
-    init=true
     ;;
   # Number of Processes
   -j)
@@ -248,23 +243,13 @@ if [[ $sign == true ]]; then
   fi
 fi
 
-if [[ $init == false && $push == false && $setup == false ]]; then
+if [[ $push == false && $setup == false ]]; then
   # Check that a version is specified
   if [[ $VERSION == "" ]]; then
     echo "$scriptName: Missing version."
     echo "Try $scriptName --help for more information"
     exit 1
   fi
-fi
-
-######################
-######## INIT ########
-######################
-if [[ $init == true ]]; then
-  echo "Setup Dependencies..."
-
-  "$dirName"/setup/setup.sh
-  exit
 fi
 
 #######################

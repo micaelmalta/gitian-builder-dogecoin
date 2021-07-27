@@ -28,7 +28,7 @@ More independent Gitian builders are needed, which is why this guide exists. It 
 ## AUTOMATED INSTALL
     1. Launch automated script (ONLY ONCE)
 
-        ./gitian-build.sh --init
+        ./gitian-init.sh
 
 ## MANUAL INSTALL
     1. Install Docker
