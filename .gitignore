@@ -4,3 +4,5 @@ gitian-builder
 dogecoin-binaries
 gitian-descriptors
 .idea
+dogecoin-detached-sigs/
+gitian.sigs/

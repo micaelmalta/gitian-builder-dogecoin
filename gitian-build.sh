@@ -6,8 +6,9 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 # GITIAN PROPERTIES
-unset USE_LXC
-unset USE_VBOX
+[[ ! -n "$USE_LXC" ]] || { echo "USE_LXC must not be defined"; exit 1; }
+[[ ! -n "$USE_VBOX" ]] || { echo "USE_VBOX must not be defined"; exit 1; }
+
 export USE_DOCKER=1
 
 #SYSTEMS TO BUILD
@@ -21,6 +22,7 @@ build=false
 commit=false
 push=false
 init=false
+test=false
 
 # Other Basic variables
 SIGNER=
@@ -52,6 +54,7 @@ Options:
 -j		          Number of processes to use. Default $proc
 -m		          Memory to allocate in MiB. Default $mem
 --setup         Setup the gitian building environment. Uses Docker.
+--test          CI TEST. Uses Docker.
 --detach-sign   Create the assert file for detached signing. Will not commit anything.
 --no-commit     Do not commit anything to git
 -h|--help	      Print this help message
@@ -174,6 +177,9 @@ while :; do
   --setup)
     setup=true
     ;;
+  --test)
+    test=true
+    ;;
   *) # Default case: If no more options then break out of the loop.
     break ;;
   esac
@@ -181,6 +187,20 @@ while :; do
 done
 
 echo "Using ${proc} CPU and ${mem} RAM"
+
+
+if [[ $test == true ]]; then
+  if [[ $commit == true ]]; then
+    VERSION="f80bfe9068ac1a0619d48dad0d268894d926941e"
+  else
+    VERSION="1.14.3"
+  fi
+  DESCRIPTORS=('test')
+  SIGN_DESCRIPTORS=()
+  COMMIT=$VERSION
+  SIGNER="mmicael"
+  SHA256SUM="0d519f6ade0e601617a7c44b764eeae35a8784070c3e44f542011956f1743459"
+fi
 
 # Get signer
 if [[ -n "$1" ]]; then
@@ -203,7 +223,7 @@ fi
 #############################
 ######## ENV TESTING ########
 #############################
-if [[ $setup == true ]]; then
+if [[ $setup == true || $build == true ]]; then
   echo "Testing Docker..."
   if ! docker ps &>/dev/null; then
     echo "Docker is not launched..."
@@ -228,7 +248,7 @@ if [[ $sign == true ]]; then
   fi
 fi
 
-if [[ $init == false && $push == false && setup == false ]]; then
+if [[ $init == false && $push == false && $setup == false ]]; then
   # Check that a version is specified
   if [[ $VERSION == "" ]]; then
     echo "$scriptName: Missing version."
@@ -269,12 +289,19 @@ if [[ $setup == true ]]; then
 
 fi
 
-function download_descriptor() {
-  descriptor_name="${1/signed/signer}" # UGLY FIX BECAUSE OF INCONSISTENT NAMING
+function move_build_files() {
+  find build/out -type f -exec mv '{}' ../dogecoin-binaries/${VERSION}/ \;
+}
 
-  uri="${url/github.com/raw.githubusercontent.com}"/"$2"/contrib/gitian-descriptors/gitian-"$descriptor_name".yml
-  echo "Downloading descriptor ${descriptor_name} ${uri}"
-  wget $uri -O gitian-"$descriptor_name".yml || exit 1
+function download_descriptor() {
+  if [[ ! $1 == 'test' ]]; then
+    uri="${url/github.com/raw.githubusercontent.com}"/"$2"/contrib/gitian-descriptors/gitian-"$1".yml
+    echo "Downloading descriptor ${1} ${uri}"
+    wget $uri -O gitian-"$1".yml || exit 1
+  else
+    # CI tests
+    cp ../ci/descriptor/"$1".yml gitian-"$1".yml || exit 1
+  fi
 }
 
 #############################
@@ -313,7 +340,8 @@ if [[ $build == true ]]; then
     echo ""
     echo "Compiling ${VERSION} ${descriptor}"
     echo ""
-    ./bin/gbuild -j "$proc" -m "$mem" --commit dogecoin="$COMMIT" --url dogecoin="$url" ../gitian-descriptors/gitian-"$descriptor".yml
+    ./bin/gbuild -j "$proc" -m "$mem" --commit dogecoin="$COMMIT" --url dogecoin="$url" ../gitian-descriptors/gitian-"$descriptor".yml  || exit 1
+    move_build_files
   done
 
   if [[ $sign == true ]]; then
@@ -321,13 +349,13 @@ if [[ $build == true ]]; then
       echo ""
       echo "Signing ${VERSION} ${descriptor}"
       echo ""
-      ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$descriptor".yml
+      ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$descriptor".yml || exit 1
     done
   fi
 
   popd  || exit 1
 
-  if [[ $commitFiles == true ]]; then
+  if [[ $sign == true && $commitFiles == true ]]; then
     pushd gitian.sigs || exit 1
 
     for descriptor in "${DESCRIPTORS[@]}"; do
@@ -357,14 +385,15 @@ if [[ $sign == true ]]; then
     echo ""
     echo "Compiling Binary ${VERSION} ${sign_descriptor}"
     echo ""
-    ./bin/gbuild --skip-image --upgrade --commit signature="$COMMIT" ../gitian-descriptors/gitian-"$sign_descriptor".yml
+    ./bin/gbuild --skip-image --upgrade --commit signature="$COMMIT" ../gitian-descriptors/gitian-"$sign_descriptor".yml || exit 1
+    move_build_files
   done
 
   for sign_descriptor in "${SIGN_DESCRIPTORS[@]}"; do
     echo ""
     echo "Signing Binary ${VERSION} ${descriptor}"
     echo ""
-    ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$sign_descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$sign_descriptor".yml
+    ./bin/gsign --signer "$SIGNER" --release "$VERSION"-"$sign_descriptor" --destination ../gitian.sigs/ ../gitian-descriptors/gitian-"$sign_descriptor".yml || exit 1
   done
 
   popd  || exit 1
@@ -386,21 +415,6 @@ if [[ $verify == true ]]; then
   popd  || exit 1
 fi
 
-#####################
-####### MOVE #######
-#####################
-if [[ $build == true ]]; then
-  pushd gitian-builder || exit 1
-
-  BUILD_FILES=('dogecoin-*.tar.gz' 'src/dogecoin-*.tar.gz' 'dogecoin-*.zip' 'dogecoin-*.exe' 'dogecoin-*.dmg')
-  for build_file in "${BUILD_FILES[@]}"; do
-    echo "Moving build/out/${build_file} to ../dogecoin-binaries/${VERSION}"
-    mv build/out/"$build_file" ../dogecoin-binaries/"$VERSION"/ 2>/dev/null
-  done
-
-  popd  || exit 1
-fi
-
 #######################
 ####### DISPLAY #######
 #######################
@@ -409,6 +423,15 @@ if [[ -n "$VERSION" ]]; then
 
   echo "$VERSION"
   sha256sum dogecoin-*
+
+  popd  || exit 1
+fi
+
+if [[ $test == true ]]; then
+  pushd dogecoin-binaries/"$VERSION" || exit 1
+
+  filename="dogecoin-1.14.3.tar.gz"
+  echo "$SHA256SUM $filename" | sha256sum -c || { echo "Signature for $filename don't match"; exit 1; }
 
   popd  || exit 1
 fi
