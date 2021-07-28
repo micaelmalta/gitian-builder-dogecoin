@@ -33,23 +33,26 @@ if [[ $force = false ]]; then
 fi
 
 package_manager=''
-setup_docker_script=''
+init_docker_script=''
 dependencies=''
 
 echo "OS: $OSTYPE"
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]
 then
+
   if command -v apt &> /dev/null; then
     export package_manager="apt"
     export package_manager_update="${package_manager} update"
     export package_manager_install="${package_manager} -y install"
   fi
+
   if command -v dnf &> /dev/null; then
     export package_manager="dnf"
     export package_manager_update="${package_manager} update"
     export package_manager_install="${package_manager} -y install"
   fi
+
   if command -v pacman &> /dev/null; then
     export package_manager="pacman"
     export package_manager_update="${package_manager} -Suy --noconfirm"
@@ -72,15 +75,15 @@ then
     sudo='sudo '
   fi
 
-  export setup_docker_script="setup/package_manager/setup_${package_manager}_docker.sh"
-  ./setup/setup_linux.sh
+  export init_docker_script="init/package_manager/init_${package_manager}_docker.sh"
+  ./init/init_linux.sh
 
 elif [[ "$OSTYPE" == "darwin"* ]]
 then
   export package_manager_install="brew install"
   export package_manager_update="brew update"
-  export setup_docker_script="setup/package_manager/setup_darwin_docker.sh"
-  ./setup/setup_darwin.sh
+  export init_docker_script="init/package_manager/init_darwin_docker.sh"
+  ./init/init_darwin.sh
 else
   echo "Unknown OS"
   exit 1
@@ -90,7 +93,7 @@ echo "Checking..."
 
 if ! command -v docker &> /dev/null
 then
-   ./${setup_docker_script}
+   ./${init_docker_script}
    if ! command -v docker &> /dev/null
    then
      echo "Docker not properly installed..."
