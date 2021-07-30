@@ -114,6 +114,16 @@ Make sure your user in on Docker group
     newgrp docker
 
 
+### GPG SIGNER UID
+
+In order to sign the builds, you need to know your uid. To do it, follow the GNUGPG documentation
+
+https://www.gnupg.org/documentation/manuals/gnupg/Specify-a-User-ID.html
+
+You can also launch this command on your terminal to have the list
+
+    gpg --list-keys | grep uid | grep ultimate
+
 ## License
 
 Dogecoin Core is released under the terms of the MIT license. See COPYING for more information or see https://opensource.org/licenses/MIT.

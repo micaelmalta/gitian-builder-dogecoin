@@ -193,7 +193,7 @@ if [[ $test == true ]]; then
   DESCRIPTORS=('test')
   SIGN_DESCRIPTORS=()
   COMMIT=$VERSION
-  SIGNER="mmicael"
+  SIGNER="signer"
   SHA256SUM="0d519f6ade0e601617a7c44b764eeae35a8784070c3e44f542011956f1743459"
 fi
 
